@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NLH Flip-Out</title>
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/cards.css">
+    <link rel="stylesheet" href="/styles/squeeze.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>NLH Flip-Out</h1>
+            <div id="state-display"></div>
+        </header>
+
+        <main>
+            <div class="poker-table-wrapper">
+                <div class="poker-table">
+                    <!-- Community Cards -->
+                    <section id="community-section">
+                        <h2>Community Cards</h2>
+                        <div id="community-cards" class="card-container"></div>
+                        <div id="river-card-container"></div>
+                    </section>
+
+                    <!-- Players -->
+                    <section id="players-section">
+                        <div id="players-container"></div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <section id="controls">
+                <button id="deal-btn" class="btn-primary">DEAL</button>
+                <button id="new-hand-btn" class="btn-primary" style="display: none;">NEW HAND</button>
+                <button id="settings-btn" class="btn-secondary">⚙️</button>
+            </section>
+        </main>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Settings</h2>
+
+                <div class="setting-group">
+                    <label>Player Count:</label>
+                    <select id="player-count-select">
+                        <option value="2">2 Players</option>
+                        <option value="3">3 Players</option>
+                        <option value="4">4 Players</option>
+                        <option value="5">5 Players</option>
+                        <option value="6">6 Players</option>
+                        <option value="7">7 Players</option>
+                        <option value="8">8 Players</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <label>Card Color Mode:</label>
+                    <select id="color-mode-select">
+                        <option value="2">2-Color (Red/Black)</option>
+                        <option value="4">4-Color</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <label>Player Names:</label>
+                    <div id="player-names-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Calculating...</p>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

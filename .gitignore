@@ -1,0 +1,35 @@
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# WASM build outputs
+web/main.wasm
+web/js/wasm_exec.js
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# worktrees
+.worktrees/
+
+# whywaita
+.whywaita/
+
+# Node.js
+node_modules/
+dist/
+*.log
