@@ -1,10 +1,14 @@
 # Flutter/Dart
 .dart_tool/
+.dart-tool/
+.dartServer/
+.flutter
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
 .pub-cache/
 .pub/
+.config/
 build/
 pubspec.lock
 
@@ -22,5 +26,10 @@ Thumbs.db
 # worktrees
 .worktrees/
 
-# whywaita
-.whywaata/
+# Plans (implementation plans directory)
+plans/
+
+# Legacy (TypeScript implementation)
+dist/
+node_modules/
+ui-mockup/

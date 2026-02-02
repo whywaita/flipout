@@ -59,7 +59,9 @@ class GameController extends ChangeNotifier {
     await StorageService.saveSettings(_settings);
 
     // Update player names
-    for (int i = 0; i < _players.length && i < _settings.playerNames.length; i++) {
+    for (int i = 0;
+        i < _players.length && i < _settings.playerNames.length;
+        i++) {
       _players[i].name = _settings.playerNames[i];
     }
 

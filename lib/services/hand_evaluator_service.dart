@@ -10,7 +10,8 @@ class HandEvaluatorService {
     required List<Card> communityCards,
   }) async {
     if (communityCards.length != 5) {
-      throw ArgumentError('Community cards must be exactly 5 cards for showdown');
+      throw ArgumentError(
+          'Community cards must be exactly 5 cards for showdown');
     }
 
     final playerHands = <Player, MadeHand>{};
@@ -18,12 +19,13 @@ class HandEvaluatorService {
     // Evaluate each player's best hand
     for (final player in players) {
       if (player.holeCards.length != 2) {
-        throw ArgumentError('Player ${player.index} must have exactly 2 hole cards');
+        throw ArgumentError(
+            'Player ${player.index} must have exactly 2 hole cards');
       }
 
       // Combine hole cards with community cards
       final allCards = [...player.holeCards, ...communityCards];
-      final cardSet = ImmutableCardSet.fromCards(allCards);
+      final cardSet = ImmutableCardSet.of(allCards);
 
       // Get the best 5-card hand
       final madeHand = MadeHand.best(cardSet);
@@ -31,7 +33,8 @@ class HandEvaluatorService {
     }
 
     // Find the best hand value
-    final bestPower = playerHands.values.map((h) => h.power).reduce((a, b) => a > b ? a : b);
+    final bestPower =
+        playerHands.values.map((h) => h.power).reduce((a, b) => a > b ? a : b);
 
     // Identify all winners (players with the best hand)
     final winners = <Player>[];
@@ -67,7 +70,7 @@ class HandEvaluatorService {
 
     // Find the combination that produces the target hand
     for (final combo in combinations) {
-      final cardSet = ImmutableCardSet.fromCards(combo);
+      final cardSet = ImmutableCardSet.of(combo);
       final madeHand = MadeHand.best(cardSet);
 
       if (madeHand.power == targetHand.power) {

@@ -102,9 +102,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.remove_circle, color: Colors.white),
+                          icon: const Icon(Icons.remove_circle,
+                              color: Colors.white),
                           onPressed: _tempSettings.playerCount > 2
-                              ? () => _updatePlayerCount(_tempSettings.playerCount - 1)
+                              ? () => _updatePlayerCount(
+                                  _tempSettings.playerCount - 1)
                               : null,
                         ),
                         Text(
@@ -116,9 +118,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.add_circle, color: Colors.white),
+                          icon:
+                              const Icon(Icons.add_circle, color: Colors.white),
                           onPressed: _tempSettings.playerCount < 8
-                              ? () => _updatePlayerCount(_tempSettings.playerCount + 1)
+                              ? () => _updatePlayerCount(
+                                  _tempSettings.playerCount + 1)
                               : null,
                         ),
                       ],
@@ -139,13 +143,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             style: const TextStyle(color: Colors.white),
                             decoration: InputDecoration(
                               labelText: 'Player ${index + 1}',
-                              labelStyle: const TextStyle(color: Colors.white70),
+                              labelStyle:
+                                  const TextStyle(color: Colors.white70),
                               enabledBorder: OutlineInputBorder(
-                                borderSide: const BorderSide(color: Colors.white38),
+                                borderSide:
+                                    const BorderSide(color: Colors.white38),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderSide: const BorderSide(color: Colors.white),
+                                borderSide:
+                                    const BorderSide(color: Colors.white),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
@@ -168,7 +175,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           subtitle: const Text(
                             'Spades: Black, Hearts: Red, Diamonds: Blue, Clubs: Green',
-                            style: TextStyle(color: Colors.white60, fontSize: 12),
+                            style:
+                                TextStyle(color: Colors.white60, fontSize: 12),
                           ),
                           value: CardColorMode.fourColor,
                           groupValue: _tempSettings.cardColorMode,
@@ -187,7 +195,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           subtitle: const Text(
                             'Spades & Clubs: Black, Hearts & Diamonds: Red',
-                            style: TextStyle(color: Colors.white60, fontSize: 12),
+                            style:
+                                TextStyle(color: Colors.white60, fontSize: 12),
                           ),
                           value: CardColorMode.twoColor,
                           groupValue: _tempSettings.cardColorMode,
@@ -235,7 +244,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(

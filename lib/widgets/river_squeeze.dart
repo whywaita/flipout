@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Card;
 import 'package:poker/poker.dart';
 import '../models/settings.dart';
 import 'playing_card.dart';
@@ -49,7 +49,7 @@ class _RiverSqueezeState extends State<RiverSqueeze> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.4),
+              color: Colors.black.withValues(alpha: 0.4),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -111,7 +111,7 @@ class _RiverSqueezeState extends State<RiverSqueeze> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -166,9 +166,9 @@ class _RiverSqueezeState extends State<RiverSqueeze> {
 
   String _rankToString(Rank rank) {
     switch (rank) {
-      case Rank.two:
+      case Rank.deuce:
         return '2';
-      case Rank.three:
+      case Rank.trey:
         return '3';
       case Rank.four:
         return '4';
@@ -239,7 +239,7 @@ class _CardBackPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.1)
+      ..color = Colors.white.withValues(alpha: 0.1)
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
 

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Card;
 import 'package:poker/poker.dart';
 import '../models/settings.dart';
 
@@ -33,7 +33,7 @@ class PlayingCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -89,9 +89,9 @@ class PlayingCard extends StatelessWidget {
 
   String _rankToString(Rank rank) {
     switch (rank) {
-      case Rank.two:
+      case Rank.deuce:
         return '2';
-      case Rank.three:
+      case Rank.trey:
         return '3';
       case Rank.four:
         return '4';
@@ -154,7 +154,7 @@ class CardBack extends StatelessWidget {
         border: Border.all(color: Colors.black26, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -163,7 +163,7 @@ class CardBack extends StatelessWidget {
       child: Center(
         child: Icon(
           Icons.style,
-          color: Colors.white.withOpacity(0.3),
+          color: Colors.white.withValues(alpha: 0.3),
           size: 40,
         ),
       ),

@@ -61,7 +61,7 @@ class MainScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D47A1).withOpacity(0.3),
+        color: const Color(0xFF0D47A1).withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -116,8 +116,8 @@ class MainScreen extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: player.isWinner
-                ? Colors.amber.withOpacity(0.3)
-                : Colors.white.withOpacity(0.1),
+                ? Colors.amber.withValues(alpha: 0.3)
+                : Colors.white.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
             border: player.isWinner
                 ? Border.all(color: Colors.amber, width: 2)
@@ -166,8 +166,8 @@ class MainScreen extends StatelessWidget {
                 child: Wrap(
                   spacing: 8,
                   children: player.holeCards.map((card) {
-                    final isHighlighted =
-                        player.isWinner && player.winningHand?.contains(card) == true;
+                    final isHighlighted = player.isWinner &&
+                        player.winningHand?.contains(card) == true;
                     return PlayingCard(
                       card: card,
                       colorMode: controller.settings.cardColorMode,
@@ -196,7 +196,8 @@ class MainScreen extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              textStyle:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             child: const Text('DEAL'),
           ),
@@ -208,7 +209,8 @@ class MainScreen extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              textStyle:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             child: const Text('NEW HAND'),
           ),

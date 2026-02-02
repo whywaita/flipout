@@ -1,7 +1,7 @@
 # Requirements Specification
 
 **NLH Flip-Out Web Application with River Squeeze**
-*(Go + WASM / GitHub Pages / Mobile-first)*
+*(Flutter Web / GitHub Pages / Mobile-first)*
 
 ---
 
@@ -14,7 +14,7 @@ The app is:
 
 * Fully client-side (static)
 * Hosted on **GitHub Pages**
-* Implemented in **Go + WebAssembly (WASM)**
+* Implemented in **Flutter Web (Dart)**
 * Optimized primarily for **smartphone usage**
 
 ---
@@ -147,8 +147,8 @@ The application must be implemented as a **strict state machine**.
 
 ### 9.2 Calculation Library
 
-* Use **`github.com/whywaita/poker-go`**
-* Calculations are performed inside WASM (Go)
+* Use **`poker` package (pub.dev)**
+* Calculations are performed in Dart (Monte Carlo simulation)
 
 #### Usage Concept
 
@@ -307,15 +307,19 @@ This feature has **highest priority**.
 
 ## 16. Implementation Notes (For AI Agent)
 
-* Use a centralized state machine
-* Go handles:
+* Use a centralized state machine (GameController with Provider)
+* Flutter/Dart handles:
 
-  * Deck management
-  * Equity calculation
-  * Hand evaluation
-* JS/CSS handle:
+  * Deck management (DeckService)
+  * Equity calculation (EquityService using poker package)
+  * Hand evaluation (HandEvaluatorService)
+  * UI rendering (Flutter widgets)
+  * Animations (River squeeze using CustomPainter and GestureDetector)
+  * Touch/drag interactions (GestureDetector)
+* Architecture:
 
-  * Rendering
-  * Animations
-  * Touch/drag interactions
+  * State management: Provider with ChangeNotifier
+  * Services layer: Business logic separated from UI
+  * Models: Immutable data structures with copyWith()
+  * Widgets: Reusable components (PlayingCard, RiverSqueeze)
 * River squeeze quality is more important than visual perfection elsewhere

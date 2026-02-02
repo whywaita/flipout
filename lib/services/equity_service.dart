@@ -15,7 +15,8 @@ class EquityService {
       // Parse hole cards into HandRange format
       final cards = player.holeCards;
       if (cards.length != 2) {
-        throw ArgumentError('Player ${player.index} must have exactly 2 hole cards');
+        throw ArgumentError(
+            'Player ${player.index} must have exactly 2 hole cards');
       }
       final cardStr = '${_cardToString(cards[0])}${_cardToString(cards[1])}';
       return HandRange.parse(cardStr);
@@ -24,7 +25,7 @@ class EquityService {
     // Create community card set
     final ImmutableCardSet communityCardSet;
     if (communityCards.isEmpty) {
-      communityCardSet = const ImmutableCardSet.fromCards([]);
+      communityCardSet = const ImmutableCardSet.empty();
     } else {
       communityCardSet = ImmutableCardSet.parse(
         communityCards.map(_cardToString).join(''),
@@ -65,9 +66,9 @@ class EquityService {
 
   static String _rankToString(Rank rank) {
     switch (rank) {
-      case Rank.two:
+      case Rank.deuce:
         return '2';
-      case Rank.three:
+      case Rank.trey:
         return '3';
       case Rank.four:
         return '4';

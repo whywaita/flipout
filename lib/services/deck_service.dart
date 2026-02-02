@@ -15,7 +15,7 @@ class DeckService {
     _deck = [];
     for (final suit in Suit.values) {
       for (final rank in Rank.values) {
-        _deck.add(Card(rank: rank, suit: suit));
+        _deck.add(Card(rank, suit));
       }
     }
     shuffle();
