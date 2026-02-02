@@ -1,16 +1,12 @@
-# Go
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-*.test
-*.out
-go.work
-
-# WASM build outputs
-web/main.wasm
-web/js/wasm_exec.js
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+pubspec.lock
 
 # IDE
 .vscode/
@@ -27,9 +23,4 @@ Thumbs.db
 .worktrees/
 
 # whywaita
-.whywaita/
-
-# Node.js
-node_modules/
-dist/
-*.log
+.whywaata/
