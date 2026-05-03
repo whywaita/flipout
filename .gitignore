@@ -10,11 +10,11 @@
 .pub/
 .config/
 build/
-pubspec.lock
 
 # IDE
 .vscode/
 .idea/
+*.iml
 *.swp
 *.swo
 *~

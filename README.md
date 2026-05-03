@@ -90,7 +90,7 @@ flutter build web --release --base-href /flipout/
 
 ## Requirements
 
-See [rdd.md](rdd.md) for detailed requirements specification.
+See [docs/rdd.md](docs/rdd.md) for detailed requirements specification.
 
 ## License
 
