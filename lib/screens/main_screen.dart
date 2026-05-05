@@ -18,6 +18,7 @@ class MainScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<GameController>(
       builder: (context, game, _) {
+        final isSqueeze = game.phase == GamePhase.riverSqueeze;
         return Scaffold(
           backgroundColor: FlipoutColors.bg,
           body: SafeArea(
@@ -38,7 +39,11 @@ class MainScreen extends StatelessWidget {
                     _PlayerCountControls(game: game),
                     const SizedBox(height: FlipoutSpace.s2),
                   ],
-                  Expanded(child: _PlayerList(game: game)),
+                  Expanded(
+                    child: isSqueeze
+                        ? _SqueezeStage(game: game)
+                        : _PlayerList(game: game),
+                  ),
                   const SizedBox(height: FlipoutSpace.s3),
                   _PrimaryAction(game: game),
                 ],
@@ -334,12 +339,10 @@ class _BoardSlot extends StatelessWidget {
 
     final riverCard = game.hiddenRiverCard;
     if (index == 4 && riverCard != null) {
-      return RiverSqueezeCard(
-        card: riverCard,
+      return PlayingCardView(
+        card: null,
         colorMode: game.cardColorMode,
-        progress: game.squeezeProgress,
-        onProgress: game.updateSqueezeProgress,
-        onRelease: (progress) => unawaited(game.completeRiverSqueeze(progress)),
+        faceDown: true,
       );
     }
 
@@ -461,6 +464,31 @@ class _StepperButton extends StatelessWidget {
               child: Icon(icon, size: 18, color: FlipoutColors.text),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SqueezeStage extends StatelessWidget {
+  const _SqueezeStage({required this.game});
+
+  final GameController game;
+
+  @override
+  Widget build(BuildContext context) {
+    final riverCard = game.hiddenRiverCard;
+    if (riverCard == null) return const SizedBox.shrink();
+    return Center(
+      child: SingleChildScrollView(
+        child: RiverSqueezeCard(
+          key: const Key('riverSqueeze'),
+          card: riverCard,
+          colorMode: game.cardColorMode,
+          progress: game.squeezeProgress,
+          onProgress: game.updateSqueezeProgress,
+          onRelease: (progress) =>
+              unawaited(game.completeRiverSqueeze(progress)),
         ),
       ),
     );
