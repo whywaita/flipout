@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/tokens.dart';
 import 'card_color_mode.dart';
 
 enum CardSuit {
@@ -19,19 +20,19 @@ enum CardSuit {
   Color color(CardColorMode mode) {
     if (mode == CardColorMode.twoColor) {
       return this == CardSuit.heart || this == CardSuit.diamond
-          ? const Color(0xffc62828)
-          : const Color(0xff171a1f);
+          ? FlipoutColors.suitRed
+          : FlipoutColors.suitBlack;
     }
 
     switch (this) {
       case CardSuit.spade:
-        return const Color(0xff171a1f);
+        return FlipoutColors.suitBlack;
       case CardSuit.heart:
-        return const Color(0xffc62828);
+        return FlipoutColors.suitRed;
       case CardSuit.diamond:
-        return const Color(0xff1565c0);
+        return FlipoutColors.suitBlue;
       case CardSuit.club:
-        return const Color(0xff2e7d32);
+        return FlipoutColors.suitGreen;
     }
   }
 }

@@ -101,8 +101,8 @@ The application must be implemented as a **strict state machine**.
 
 * Minimum: 2
 * Maximum: 8
-* **Player count can be increased or decreased only in S1 (Preflop)**
-* Player controls must be disabled or hidden in all other states
+* **Player count can be increased or decreased only in S0 (Ready)**
+* Player controls must be disabled or hidden in all other states (including S1 Preflop)
 
 ### 7.2 Player Names
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/card_color_mode.dart';
 import '../models/playing_card.dart';
+import '../theme/tokens.dart';
 import 'playing_card_view.dart';
 
 class RiverSqueezeCard extends StatefulWidget {
@@ -54,35 +55,55 @@ class _RiverSqueezeCardState extends State<RiverSqueezeCard> {
       },
       onPanEnd: (_) => widget.onRelease(_liveProgress),
       child: SizedBox(
-        width: 112,
-        height: 148,
+        width: 96,
+        height: 132,
         child: Stack(
           children: [
             Positioned.fill(
-              child: PlayingCardView(
-                card: widget.card,
-                colorMode: widget.colorMode,
-                faceDown: true,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(FlipoutRadius.sm),
+                  boxShadow: FlipoutShadows.shadow2,
+                ),
+                child: PlayingCardView(
+                  card: widget.card,
+                  colorMode: widget.colorMode,
+                  faceDown: true,
+                ),
               ),
             ),
             Positioned(
               left: 0,
               top: 0,
-              width: 34 + _liveProgress * 70,
-              height: 34 + _liveProgress * 86,
+              width: 30 + _liveProgress * 66,
+              height: 30 + _liveProgress * 84,
               child: ClipPath(
                 clipper: _SqueezeClipper(_liveProgress),
                 child: _RevealedCorner(card: widget.card),
               ),
             ),
             Positioned(
-              right: 8,
-              bottom: 8,
-              child: Text(
-                '${(_liveProgress * 100).round()}%',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: const Color(0xfffffbeb),
-                  fontWeight: FontWeight.w700,
+              right: 6,
+              bottom: 6,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: FlipoutSpace.s1,
+                    vertical: 2,
+                  ),
+                  child: Text(
+                    '${(_liveProgress * 100).round()}%',
+                    style: const TextStyle(
+                      color: FlipoutColors.accentInk,
+                      fontSize: FlipoutType.xs,
+                      fontWeight: FlipoutType.cta,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -103,24 +124,26 @@ class _RevealedCorner extends StatelessWidget {
     final color = card.suit.color(CardColorMode.twoColor);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(7),
+        color: FlipoutColors.cardBg,
+        borderRadius: BorderRadius.circular(FlipoutRadius.sm),
+        border: Border.all(color: FlipoutColors.cardBorder),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(7),
+        padding: const EdgeInsets.all(FlipoutSpace.s2),
         child: Align(
           alignment: Alignment.topLeft,
           child: FittedBox(
             fit: BoxFit.scaleDown,
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   card.rankLabel,
                   style: TextStyle(
                     color: color,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
+                    fontSize: 28,
+                    fontWeight: FlipoutType.cta,
                     height: 1,
                   ),
                 ),
@@ -128,8 +151,8 @@ class _RevealedCorner extends StatelessWidget {
                   card.suitSymbol,
                   style: TextStyle(
                     color: color,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
+                    fontSize: 24,
+                    fontWeight: FlipoutType.cta,
                     height: 1,
                   ),
                 ),

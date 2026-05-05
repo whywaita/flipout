@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'controllers/game_controller.dart';
 import 'screens/main_screen.dart';
+import 'theme/tokens.dart';
 
 class FlipoutApp extends StatelessWidget {
   const FlipoutApp({super.key, this.controller});
@@ -10,18 +11,25 @@ class FlipoutApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: FlipoutColors.accent,
+      primary: FlipoutColors.accent,
+      onPrimary: Colors.white,
+      surface: FlipoutColors.surface1,
+      onSurface: FlipoutColors.text,
+      brightness: Brightness.light,
+    );
+
     final theme = ThemeData(
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xff0f766e),
-        brightness: Brightness.dark,
-      ),
-      scaffoldBackgroundColor: const Color(0xff101418),
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: FlipoutColors.bg,
       useMaterial3: true,
-      textTheme: ThemeData.dark().textTheme.apply(
+      textTheme: ThemeData.light().textTheme.apply(
         fontFamily: 'Roboto',
-        bodyColor: const Color(0xfff8fafc),
-        displayColor: const Color(0xfff8fafc),
+        bodyColor: FlipoutColors.text,
+        displayColor: FlipoutColors.text,
       ),
+      iconTheme: const IconThemeData(color: FlipoutColors.textMuted),
     );
 
     final app = MaterialApp(

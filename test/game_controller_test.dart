@@ -19,9 +19,12 @@ void main() {
           storageService: MemoryStorageService(),
         );
 
+        expect(controller.phase, GamePhase.ready);
+        expect(controller.showPlayerCountControls, isTrue);
+
         await controller.deal();
         expect(controller.phase, GamePhase.preflopDealt);
-        expect(controller.showPlayerCountControls, isTrue);
+        expect(controller.showPlayerCountControls, isFalse);
         expect(controller.showEquity, isTrue);
         expect(controller.players, hasLength(2));
         expect(
@@ -74,36 +77,32 @@ void main() {
       },
     );
 
-    test(
-      'allows player count changes only in preflop and resets to ready',
-      () async {
-        final controller = GameController(
-          deckService: DeckService(randomSeed: 11),
-          equityService: const FakeEquityService(),
-          storageService: MemoryStorageService(),
-        );
+    test('allows player count changes only in the ready phase', () async {
+      final controller = GameController(
+        deckService: DeckService(randomSeed: 11),
+        equityService: const FakeEquityService(),
+        storageService: MemoryStorageService(),
+      );
 
-        controller.incrementPlayers();
-        expect(controller.players, hasLength(2));
+      expect(controller.phase, GamePhase.ready);
+      expect(controller.showPlayerCountControls, isTrue);
+      controller.incrementPlayers();
+      expect(controller.players, hasLength(3));
+      expect(controller.phase, GamePhase.ready);
 
-        await controller.deal();
-        expect(controller.phase, GamePhase.preflopDealt);
-        controller.incrementPlayers();
-        expect(controller.phase, GamePhase.ready);
-        expect(controller.players, hasLength(3));
-        expect(
-          controller.players.every((player) => player.holeCards.isEmpty),
-          isTrue,
-        );
+      await controller.deal();
+      expect(controller.phase, GamePhase.preflopDealt);
+      expect(controller.showPlayerCountControls, isFalse);
+      controller.incrementPlayers();
+      expect(controller.phase, GamePhase.preflopDealt);
+      expect(controller.players, hasLength(3));
 
-        await controller.deal();
-        await controller.deal();
-        expect(controller.phase, GamePhase.flopDealt);
-        controller.decrementPlayers();
-        expect(controller.phase, GamePhase.flopDealt);
-        expect(controller.players, hasLength(3));
-      },
-    );
+      await controller.deal();
+      expect(controller.phase, GamePhase.flopDealt);
+      controller.decrementPlayers();
+      expect(controller.phase, GamePhase.flopDealt);
+      expect(controller.players, hasLength(3));
+    });
 
     test('persists names and card color mode in settings storage', () async {
       final storage = MemoryStorageService();
@@ -156,6 +155,8 @@ void main() {
         controller.players.first.winningCards.map((card) => card.code).toSet(),
         {'As', 'Ks', 'Qs', 'Js', 'Ts'},
       );
+      expect(controller.players.first.handLabel, 'Straight Flush');
+      expect(controller.players.last.handLabel, 'High Card');
     });
   });
 }

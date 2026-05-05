@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/card_color_mode.dart';
 import '../models/playing_card.dart';
+import '../theme/tokens.dart';
 
 class PlayingCardView extends StatelessWidget {
   const PlayingCardView({
@@ -20,31 +21,36 @@ class PlayingCardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = compact ? 42.0 : 56.0;
-    final height = compact ? 60.0 : 78.0;
+    final width = compact ? 40.0 : 56.0;
+    final height = compact ? 56.0 : 78.0;
+    final isBack = faceDown || card == null;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: faceDown || card == null
-            ? const Color(0xff7f1d1d)
-            : Colors.white,
-        borderRadius: BorderRadius.circular(7),
+        color: isBack ? FlipoutColors.cardBackA : FlipoutColors.cardBg,
+        borderRadius: BorderRadius.circular(compact ? 4 : FlipoutRadius.sm),
         border: Border.all(
-          color: highlight ? const Color(0xffffc857) : const Color(0xffd1d5db),
-          width: highlight ? 3 : 1,
+          color: highlight
+              ? FlipoutColors.winner
+              : isBack
+              ? FlipoutColors.accentHover
+              : FlipoutColors.cardBorder,
+          width: highlight ? 2 : 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.28),
-            offset: const Offset(0, 4),
-            blurRadius: 12,
-          ),
-        ],
+        boxShadow: highlight
+            ? const [
+                BoxShadow(
+                  color: Color(0x40b45309),
+                  offset: Offset(0, 4),
+                  blurRadius: 12,
+                ),
+              ]
+            : FlipoutShadows.shadow1,
       ),
-      child: faceDown || card == null
+      child: isBack
           ? _CardBack(compact: compact)
           : _Face(card: card!, colorMode: colorMode, compact: compact),
     );
@@ -65,35 +71,38 @@ class _Face extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = card.suit.color(colorMode);
-    final labelStyle = TextStyle(
+    final rankStyle = TextStyle(
       color: color,
-      fontWeight: FontWeight.w800,
-      fontSize: compact ? 16 : 20,
+      fontWeight: FlipoutType.cta,
+      fontSize: compact ? FlipoutType.sm : FlipoutType.md,
       height: 1,
     );
 
-    final inset = compact ? 5.0 : 7.0;
+    final inset = compact ? 4.0 : 6.0;
     return Stack(
       children: [
         Positioned(
           left: inset,
           top: inset,
-          child: Text(card.rankLabel, style: labelStyle),
+          child: Text(card.rankLabel, style: rankStyle),
         ),
         Positioned(
           left: inset,
-          top: compact ? 20 : 25,
+          top: compact ? 16 : 20,
           child: Text(
             card.suitSymbol,
-            style: labelStyle.copyWith(fontSize: compact ? 12 : 16),
+            style: rankStyle.copyWith(fontSize: compact ? 10 : FlipoutType.sm),
           ),
         ),
-        Positioned(
-          right: inset,
-          bottom: inset,
-          child: Text(
-            card.suitSymbol,
-            style: labelStyle.copyWith(fontSize: compact ? 18 : 24),
+        Positioned.fill(
+          child: Center(
+            child: Text(
+              card.suitSymbol,
+              style: rankStyle.copyWith(
+                fontSize: compact ? 14 : 26,
+                color: color.withValues(alpha: 0.9),
+              ),
+            ),
           ),
         ),
       ],
@@ -108,18 +117,30 @@ class _CardBack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.all(compact ? 5 : 7),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(5),
-          border: Border.all(color: const Color(0xfffffbeb), width: 2),
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [FlipoutColors.cardBackA, FlipoutColors.cardBackB],
         ),
-        child: Center(
-          child: Icon(
-            Icons.auto_awesome,
-            color: const Color(0xfffffbeb),
-            size: compact ? 18 : 24,
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(compact ? 4 : 6),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(compact ? 3 : 4),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.5),
+              width: 1.5,
+            ),
+          ),
+          child: Center(
+            child: Icon(
+              Icons.diamond_outlined,
+              color: Colors.white.withValues(alpha: 0.85),
+              size: compact ? 14 : 22,
+            ),
           ),
         ),
       ),

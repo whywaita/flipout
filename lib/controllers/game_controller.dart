@@ -50,7 +50,7 @@ class GameController extends ChangeNotifier {
   bool get isCalculatingEquity => _isCalculatingEquity;
   double get squeezeProgress => _squeezeProgress;
 
-  bool get showPlayerCountControls => _phase == GamePhase.preflopDealt;
+  bool get showPlayerCountControls => _phase == GamePhase.ready;
 
   bool get showEquity {
     return _phase == GamePhase.preflopDealt ||
@@ -288,6 +288,7 @@ class GameController extends ChangeNotifier {
       return player.copyWith(
         isWinner: result.winnerIndexes.contains(index),
         winningCards: result.winningCardsByPlayer[index] ?? {},
+        handLabel: result.handLabelByPlayer[index],
       );
     }).toList();
   }

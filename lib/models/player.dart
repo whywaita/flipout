@@ -10,6 +10,7 @@ class Player {
     this.equity,
     this.isWinner = false,
     this.winningCards = const {},
+    this.handLabel,
   });
 
   final int id;
@@ -18,6 +19,7 @@ class Player {
   final double? equity;
   final bool isWinner;
   final Set<PlayingCard> winningCards;
+  final String? handLabel;
 
   Player copyWith({
     String? name,
@@ -26,6 +28,8 @@ class Player {
     bool clearEquity = false,
     bool? isWinner,
     Set<PlayingCard>? winningCards,
+    String? handLabel,
+    bool clearHandLabel = false,
   }) {
     return Player(
       id: id,
@@ -34,6 +38,7 @@ class Player {
       equity: clearEquity ? null : equity ?? this.equity,
       isWinner: isWinner ?? this.isWinner,
       winningCards: winningCards ?? this.winningCards,
+      handLabel: clearHandLabel ? null : handLabel ?? this.handLabel,
     );
   }
 }

@@ -27,6 +27,9 @@ Thumbs.db
 # worktrees
 .worktrees/
 
+# Claude Code local settings
+.claude/
+
 # Plans (implementation plans directory)
 plans/
 
