@@ -18,7 +18,7 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     environment:
-      name: github-pages
+      name: github-pages-preview
       url: ${{ steps.preview.outputs.url }}
     env:
       REPOSITORY_NAME: ${{ github.event.repository.name }}
