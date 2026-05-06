@@ -502,18 +502,25 @@ class _PlayerList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
+    return GridView.builder(
+      padding: EdgeInsets.zero,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: game.players.length,
-      separatorBuilder: (_, __) => const SizedBox(height: FlipoutSpace.s2),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 2.6,
+        crossAxisSpacing: FlipoutSpace.s2,
+        mainAxisSpacing: FlipoutSpace.s2,
+      ),
       itemBuilder: (context, index) {
-        return _PlayerRow(player: game.players[index], game: game);
+        return _PlayerCard(player: game.players[index], game: game);
       },
     );
   }
 }
 
-class _PlayerRow extends StatelessWidget {
-  const _PlayerRow({required this.player, required this.game});
+class _PlayerCard extends StatelessWidget {
+  const _PlayerCard({required this.player, required this.game});
 
   final Player player;
   final GameController game;
@@ -523,10 +530,7 @@ class _PlayerRow extends StatelessWidget {
     final isWinner = player.isWinner;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
-      padding: const EdgeInsets.symmetric(
-        horizontal: FlipoutSpace.s3,
-        vertical: FlipoutSpace.s2,
-      ),
+      padding: const EdgeInsets.all(FlipoutSpace.s2),
       decoration: BoxDecoration(
         color: isWinner ? FlipoutColors.winnerSoft : FlipoutColors.surface1,
         borderRadius: BorderRadius.circular(FlipoutRadius.md),
@@ -536,51 +540,81 @@ class _PlayerRow extends StatelessWidget {
         ),
         boxShadow: FlipoutShadows.shadow1,
       ),
-      constraints: const BoxConstraints(minHeight: 56),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 84,
-            child: Text(
-              player.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontWeight: FlipoutType.bold,
-                fontSize: FlipoutType.md,
-                color: isWinner ? FlipoutColors.winnerInk : FlipoutColors.text,
+      clipBehavior: Clip.antiAlias,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: SizedBox(
+                width: constraints.maxWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      player.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontWeight: FlipoutType.bold,
+                        fontSize: FlipoutType.md,
+                        color: isWinner
+                            ? FlipoutColors.winnerInk
+                            : FlipoutColors.text,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    _HoleCards(player: player, game: game),
+                    const SizedBox(height: 4),
+                    if (game.phase == GamePhase.showdown)
+                      _ShowdownTrailing(player: player)
+                    else if (game.showEquity)
+                      _EquityBadge(player: player, game: game),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: FlipoutSpace.s2),
-          for (final card in player.holeCards)
-            Padding(
-              padding: const EdgeInsets.only(right: FlipoutSpace.s1),
-              child: PlayingCardView(
-                card: card,
-                colorMode: game.cardColorMode,
-                compact: true,
-                highlight: player.winningCards.contains(card),
-              ),
-            ),
-          if (player.holeCards.isEmpty)
-            const Padding(
-              padding: EdgeInsets.only(right: FlipoutSpace.s1),
-              child: Row(
-                children: [
-                  _EmptyHole(),
-                  SizedBox(width: FlipoutSpace.s1),
-                  _EmptyHole(),
-                ],
-              ),
-            ),
-          const Spacer(),
-          if (game.phase == GamePhase.showdown)
-            _ShowdownTrailing(player: player)
-          else if (game.showEquity)
-            _EquityBadge(player: player, game: game),
-        ],
+          );
+        },
       ),
+    );
+  }
+}
+
+class _HoleCards extends StatelessWidget {
+  const _HoleCards({required this.player, required this.game});
+
+  final Player player;
+  final GameController game;
+
+  @override
+  Widget build(BuildContext context) {
+    if (player.holeCards.isEmpty) {
+      return const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _EmptyHole(),
+          SizedBox(width: FlipoutSpace.s1),
+          _EmptyHole(),
+        ],
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final (index, card) in player.holeCards.indexed) ...[
+          if (index > 0) const SizedBox(width: FlipoutSpace.s1),
+          PlayingCardView(
+            card: card,
+            colorMode: game.cardColorMode,
+            compact: true,
+            highlight: player.winningCards.contains(card),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -610,7 +644,7 @@ class _ShowdownTrailing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
         if (player.isWinner)
@@ -654,7 +688,7 @@ class _EquityBadge extends StatelessWidget {
     return SizedBox(
       width: 64,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
           if (loading)

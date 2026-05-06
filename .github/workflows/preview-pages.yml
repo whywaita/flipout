@@ -1,0 +1,140 @@
+name: Deploy PR Preview to GitHub Pages
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages-preview
+      url: ${{ steps.preview.outputs.url }}
+    env:
+      REPOSITORY_NAME: ${{ github.event.repository.name }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.action == 'closed' && github.event.pull_request.base.ref || github.event.pull_request.head.sha }}
+          path: source
+
+      - name: Prepare preview path
+        id: preview
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          safe_branch="$(printf '%s' "$HEAD_REF" | LC_ALL=C tr -c 'A-Za-z0-9_/-' '-')"
+          safe_branch="$(printf '%s' "$safe_branch" | sed -E 's#/{2,}#/#g; s#^/+##; s#/+$##; s#-+#-#g')"
+          if [[ -z "$safe_branch" ]]; then
+            safe_branch="pr-${{ github.event.pull_request.number }}"
+          fi
+          preview_path="preview/${safe_branch}"
+          preview_url="https://${GITHUB_REPOSITORY_OWNER}.github.io/${REPOSITORY_NAME}/${preview_path}/"
+          {
+            echo "path=${preview_path}"
+            echo "url=${preview_url}"
+          } >>"$GITHUB_OUTPUT"
+          echo "Preview URL: ${preview_url}" >>"$GITHUB_STEP_SUMMARY"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        if: github.event.action != 'closed'
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        if: github.event.action != 'closed'
+        working-directory: source
+        run: flutter pub get
+
+      - name: Build preview
+        if: github.event.action != 'closed'
+        working-directory: source
+        run: flutter build web --release --base-href "/${{ github.event.repository.name }}/${{ steps.preview.outputs.path }}/"
+
+      - name: Restore staged Pages site
+        id: restore
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          remote_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$remote_url" gh-pages >/dev/null 2>&1; then
+            git clone --depth 1 --branch gh-pages "$remote_url" pages-site
+            echo "has_site=true" >>"$GITHUB_OUTPUT"
+          else
+            mkdir pages-site
+            git -C pages-site init
+            git -C pages-site checkout -b gh-pages
+            git -C pages-site remote add origin "$remote_url"
+            echo "has_site=false" >>"$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        if: github.event.action != 'closed' && steps.restore.outputs.has_site == 'false'
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          path: base-source
+
+      - name: Seed production root
+        if: github.event.action != 'closed' && steps.restore.outputs.has_site == 'false'
+        working-directory: base-source
+        run: |
+          set -euo pipefail
+          flutter pub get
+          flutter build web --release --base-href "/${REPOSITORY_NAME}/"
+          ../source/.github/scripts/stage-pages-site.sh production ../pages-site build/web
+
+      - name: Stage preview
+        if: github.event.action != 'closed'
+        run: source/.github/scripts/stage-pages-site.sh preview pages-site source/build/web "${{ steps.preview.outputs.path }}"
+
+      - name: Remove preview
+        if: github.event.action == 'closed' && steps.restore.outputs.has_site == 'true'
+        run: source/.github/scripts/stage-pages-site.sh cleanup pages-site "${{ steps.preview.outputs.path }}"
+
+      - name: Commit staged Pages site
+        if: github.event.action != 'closed' || steps.restore.outputs.has_site == 'true'
+        run: |
+          set -euo pipefail
+          git -C pages-site config user.name "github-actions[bot]"
+          git -C pages-site config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C pages-site add -A
+          if git -C pages-site diff --cached --quiet; then
+            echo "No Pages staging changes."
+          else
+            git -C pages-site commit -m "Deploy PR preview"
+            git -C pages-site push origin gh-pages
+          fi
+
+      - name: Prepare Pages artifact
+        if: github.event.action != 'closed' || steps.restore.outputs.has_site == 'true'
+        run: |
+          set -euo pipefail
+          rm -rf pages-artifact
+          mkdir pages-artifact
+          cp -a pages-site/. pages-artifact/
+          rm -rf pages-artifact/.git
+
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+        if: github.event.action != 'closed' || steps.restore.outputs.has_site == 'true'
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        if: github.event.action != 'closed' || steps.restore.outputs.has_site == 'true'
+        with:
+          path: pages-artifact
+
+      - id: deployment
+        if: github.event.action != 'closed' || steps.restore.outputs.has_site == 'true'
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

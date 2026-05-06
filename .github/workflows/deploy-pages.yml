@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -31,11 +31,50 @@ jobs:
       - name: Build web
         run: flutter build web --release --base-href "/${{ github.event.repository.name }}/"
 
+      - name: Restore staged Pages site
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          remote_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$remote_url" gh-pages >/dev/null 2>&1; then
+            git clone --depth 1 --branch gh-pages "$remote_url" pages-site
+          else
+            mkdir pages-site
+            git -C pages-site init
+            git -C pages-site checkout -b gh-pages
+            git -C pages-site remote add origin "$remote_url"
+          fi
+
+      - name: Stage production site
+        run: .github/scripts/stage-pages-site.sh production pages-site build/web
+
+      - name: Commit staged Pages site
+        run: |
+          set -euo pipefail
+          git -C pages-site config user.name "github-actions[bot]"
+          git -C pages-site config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C pages-site add -A
+          if git -C pages-site diff --cached --quiet; then
+            echo "No Pages staging changes."
+          else
+            git -C pages-site commit -m "Deploy GitHub Pages"
+            git -C pages-site push origin gh-pages
+          fi
+
+      - name: Prepare Pages artifact
+        run: |
+          set -euo pipefail
+          rm -rf pages-artifact
+          mkdir pages-artifact
+          cp -a pages-site/. pages-artifact/
+          rm -rf pages-artifact/.git
+
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          path: build/web
+          path: pages-artifact
 
   deploy:
     needs: build
