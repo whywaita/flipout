@@ -1,11 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flipout/app.dart';
 import 'package:flipout/controllers/game_controller.dart';
 import 'package:flipout/models/game_phase.dart';
 import 'package:flipout/models/playing_card.dart';
 import 'package:flipout/services/deck_service.dart';
 import 'package:flipout/services/storage_service.dart';
+import 'package:flipout/widgets/playing_card_view.dart';
 
 import 'fake_equity_service.dart';
 
@@ -112,5 +113,48 @@ void main() {
 
     expect(find.text('High Card'), findsOneWidget);
     expect(find.text('Pair'), findsOneWidget);
+  });
+
+  testWidgets('player list lays out eight players in a two column grid', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final controller = GameController(
+      deckService: DeckService(randomSeed: 41),
+      equityService: const FakeEquityService(),
+      storageService: MemoryStorageService(),
+    );
+
+    for (var i = controller.players.length; i < 8; i += 1) {
+      controller.incrementPlayers();
+    }
+
+    await tester.pumpWidget(FlipoutApp(controller: controller));
+
+    final gridFinder = find.byType(GridView);
+    expect(gridFinder, findsOneWidget);
+    expect(find.byType(ListView), findsNothing);
+
+    final grid = tester.widget<GridView>(gridFinder);
+    final delegate =
+        grid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount;
+    expect(delegate.crossAxisCount, 2);
+    expect(delegate.childAspectRatio, 2.6);
+    expect(delegate.crossAxisSpacing, 8);
+    expect(delegate.mainAxisSpacing, 8);
+    expect(find.text('Player 8'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('dealButton')));
+    await tester.pumpAndSettle();
+
+    final holeCards = tester.widgetList<PlayingCardView>(
+      find.byType(PlayingCardView),
+    );
+    expect(holeCards, hasLength(16));
+    expect(holeCards.every((card) => card.compact), isTrue);
   });
 }
