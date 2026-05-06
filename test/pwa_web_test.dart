@@ -102,5 +102,18 @@ void main() {
       expect(source, contains('caches.open'));
       expect(source, contains('index.html'));
     });
+
+    test('custom service worker awaits navigation fallback cache matches', () {
+      final source = File('web/pwa_service_worker.js').readAsStringSync();
+
+      expect(
+        source,
+        contains(
+          "return (await cache.match('./')) || "
+          "(await cache.match('index.html'));",
+        ),
+      );
+      expect(source, isNot(contains("|| cache.match('index.html')")));
+    });
   });
 }

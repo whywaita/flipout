@@ -67,7 +67,7 @@ async function fetchAndCache(request) {
     }
 
     if (request.mode === 'navigate') {
-      return (await cache.match('./')) || cache.match('index.html');
+      return (await cache.match('./')) || (await cache.match('index.html'));
     }
 
     throw error;
