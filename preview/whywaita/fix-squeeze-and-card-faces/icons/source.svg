@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.55" y2="1">
+      <stop offset="0%" stop-color="#14b8a6"/>
+      <stop offset="55%" stop-color="#0d9488"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+    <radialGradient id="topGlow" cx="0.28" cy="0.18" r="0.75">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.22)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </radialGradient>
+    <linearGradient id="backCard" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d9488"/>
+      <stop offset="100%" stop-color="#0a5d56"/>
+    </linearGradient>
+    <linearGradient id="frontCard" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+    <filter id="cardShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="22" stdDeviation="34" flood-color="#062a25" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
+  <rect width="1024" height="1024" rx="220" fill="url(#topGlow)"/>
+
+  <!-- everything below is centred around (512, 512) -->
+  <g transform="translate(512, 512)">
+    <!-- back card: shifted left, rotated more -->
+    <g transform="translate(-95, 0) rotate(-22)" filter="url(#cardShadow)">
+      <rect x="-240" y="-336" width="480" height="672" rx="32" fill="url(#backCard)" stroke="#5eead4" stroke-width="7"/>
+      <rect x="-204" y="-300" width="408" height="600" rx="20" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="4"/>
+      <rect x="-148" y="-244" width="296" height="488" rx="6" fill="rgba(255,255,255,0.16)"/>
+      <rect x="-72" y="-26" width="144" height="52" rx="4" fill="rgba(255,255,255,0.3)"/>
+    </g>
+
+    <!-- front card: shifted right, gentle tilt -->
+    <g transform="translate(85, 0) rotate(-6)" filter="url(#cardShadow)">
+      <rect x="-240" y="-336" width="480" height="672" rx="32" fill="url(#frontCard)"/>
+      <rect x="-240" y="-336" width="480" height="672" rx="32" fill="none" stroke="#0f172a" stroke-width="2" opacity="0.08"/>
+
+      <text x="-184" y="-200" text-anchor="middle"
+            font-family="'Helvetica Neue', Arial, sans-serif"
+            font-size="112" font-weight="900" fill="#0f172a">A</text>
+      <text x="-184" y="-86" text-anchor="middle"
+            font-family="'Helvetica Neue', Arial, sans-serif"
+            font-size="112" fill="#0f172a">♠</text>
+
+      <g transform="translate(184, 252) rotate(180)">
+        <text x="0" y="-46" text-anchor="middle"
+              font-family="'Helvetica Neue', Arial, sans-serif"
+              font-size="112" font-weight="900" fill="#0f172a">A</text>
+        <text x="0" y="68" text-anchor="middle"
+              font-family="'Helvetica Neue', Arial, sans-serif"
+              font-size="112" fill="#0f172a">♠</text>
+      </g>
+
+      <text x="0" y="120" text-anchor="middle"
+            font-family="'Helvetica Neue', Arial, sans-serif"
+            font-size="380" font-weight="900" fill="#0f172a">♠</text>
+    </g>
+  </g>
+</svg>
