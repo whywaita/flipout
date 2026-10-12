@@ -110,4 +110,68 @@ void main() {
     final r = eval(['8c', '6d'], ['Kh', 'Jc', '3c', '2c', '8s']);
     expect(r.label, 'Pair');
   });
+
+  Set<int> winners(List<List<String>> holes, List<String> board) {
+    return evaluator
+        .evaluate(
+          holeCards: [
+            for (final hole in holes) hole.map(PlayingCard.parse).toList(),
+          ],
+          board: board.map(PlayingCard.parse).toList(),
+        )
+        .winnerIndexes;
+  }
+
+  test('wheel loses to a six-high straight', () {
+    // Player 0: A-2-3-4-5 (wheel). Player 1: 2-3-4-5-6.
+    expect(
+      winners(
+        [
+          ['As', 'Kd'],
+          ['6c', 'Qh'],
+        ],
+        ['2h', '3c', '4d', '5s', '9c'],
+      ),
+      {1},
+    );
+  });
+
+  test('steel wheel loses to a six-high straight flush', () {
+    expect(
+      winners(
+        [
+          ['As', 'Kd'],
+          ['6s', 'Qh'],
+        ],
+        ['2s', '3s', '4s', '5s', '9c'],
+      ),
+      {1},
+    );
+  });
+
+  test('score ranks a wheel below a six-high straight', () {
+    final wheel = evaluator.score(
+      [
+        'As',
+        '2h',
+        '3c',
+        '4d',
+        '5s',
+        '9c',
+        'Kd',
+      ].map(PlayingCard.parse).toList(),
+    );
+    final sixHigh = evaluator.score(
+      [
+        '6c',
+        '2h',
+        '3c',
+        '4d',
+        '5s',
+        '9c',
+        'Qh',
+      ].map(PlayingCard.parse).toList(),
+    );
+    expect(sixHigh, greaterThan(wheel));
+  });
 }

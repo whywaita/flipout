@@ -61,8 +61,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(controller.phase, GamePhase.riverSqueeze);
     expect(find.byKey(const Key('riverSqueeze')), findsOneWidget);
-    expect(find.byKey(const Key('squeezeButton')), findsOneWidget);
-    expect(find.byKey(const Key('rotateButton')), findsOneWidget);
+    expect(find.byKey(const Key('squeezeCard')), findsOneWidget);
 
     await controller.completeRiverSqueeze(1);
     await tester.pumpAndSettle();

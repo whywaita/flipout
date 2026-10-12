@@ -52,6 +52,8 @@ The app is:
 ### 4.1 Main Screen
 
 * Board area (Flop / Turn / River)
+
+  * Each board card shows one rank character (`T` for ten) and one suit mark
 * Player list (2–8 rows)
 * DEAL button (primary action)
 * NEW HAND button
@@ -186,11 +188,10 @@ This feature has **highest priority**.
   * River card is fully face-down
 * Interaction:
 
-  * **User drags the card to peel only the corner**
-  * As the drag progresses, the corner reveals:
-
-    * Rank
-    * Suit
+  * **User drags a side or the top of the card to bend it up a little at a time**
+  * The fold always runs parallel to the dragged edge
+  * The squeeze face shows **pips only, with no corner index**, so the rank
+    is read from the pips as they come into view
 * No buttons are used during squeeze
 * DEAL button is disabled during squeeze
 
@@ -210,7 +211,7 @@ This feature has **highest priority**.
 
   * Thick card stock feel
   * Shadows and depth
-  * Emphasis on corner reveal
+  * Emphasis on gradual side / top reveal
 * Card color mode (2-color / 4-color) must still apply
 
 ---
