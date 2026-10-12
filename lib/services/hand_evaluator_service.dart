@@ -115,16 +115,27 @@ class HandEvaluatorService {
     );
   }
 
+  /// Returns a comparable strength for the best 5-card hand in [cards]:
+  /// a higher score always means a stronger hand, equal scores tie.
+  int score(List<PlayingCard> cards) {
+    final evaluation = _evaluateSeven(cards);
+    var result = evaluation.rank.index;
+    for (var i = 0; i < 5; i += 1) {
+      final value = i < evaluation.tiebreakers.length
+          ? evaluation.tiebreakers[i]
+          : 0;
+      result = result * 16 + value;
+    }
+    return result;
+  }
+
   _Evaluation _evaluateSeven(List<PlayingCard> cards) {
     final straightFlush = _findStraightFlush(cards);
     if (straightFlush != null) {
-      final values = straightFlush.map((c) => c.rank.value).toList()
-        ..sort((a, b) => b.compareTo(a));
-      final high = _isWheel(values) ? 5 : values.first;
       return _Evaluation(
         rank: HandRank.straightFlush,
         cards: straightFlush,
-        tiebreakers: [high],
+        tiebreakers: [_straightHigh(straightFlush)],
       );
     }
 
@@ -181,13 +192,10 @@ class HandEvaluatorService {
 
     final straight = _findStraight(cards);
     if (straight != null) {
-      final values = straight.map((c) => c.rank.value).toList()
-        ..sort((a, b) => b.compareTo(a));
-      final high = _isWheel(values) ? 5 : values.first;
       return _Evaluation(
         rank: HandRank.straight,
         cards: straight,
-        tiebreakers: [high],
+        tiebreakers: [_straightHigh(straight)],
       );
     }
 
@@ -301,12 +309,15 @@ class HandEvaluatorService {
     return result;
   }
 
-  bool _isWheel(List<int> sortedDesc) {
-    if (sortedDesc.length < 5) return false;
-    return sortedDesc[0] == 5 &&
-        sortedDesc[1] == 4 &&
-        sortedDesc[2] == 3 &&
-        sortedDesc[3] == 2 &&
-        sortedDesc[4] == 1;
+  /// The top card of a 5-card straight. An ace counts as 14, so the only
+  /// straight holding both an ace and a deuce is the wheel (A-2-3-4-5),
+  /// whose top card is the five.
+  int _straightHigh(Set<PlayingCard> straight) {
+    final values = straight.map((c) => c.rank.value).toSet();
+    if (values.contains(CardRank.ace.value) &&
+        values.contains(CardRank.two.value)) {
+      return CardRank.five.value;
+    }
+    return values.reduce((a, b) => a > b ? a : b);
   }
 }

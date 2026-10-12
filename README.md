@@ -18,7 +18,7 @@ A No-Limit Hold'em (NLH) flip-out tool designed for quick, in-person use. Built 
 
 - **Flutter Web**: For cross-platform web application
 - **Dart**: Programming language
-- **poker package**: For equity calculation and hand evaluation
+- **Built-in hand evaluator**: Pure-Dart equity calculation and hand evaluation (the `poker` package returns wrong results when compiled to JavaScript)
 - **Provider**: State management
 - **SharedPreferences**: Local storage
 

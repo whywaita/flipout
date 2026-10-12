@@ -1,24 +1,38 @@
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/card_color_mode.dart';
 import '../models/playing_card.dart';
 import '../theme/tokens.dart';
 import 'playing_card_view.dart';
+import 'squeeze_geometry.dart';
 
+/// Baccarat-style river reveal: the player bends the face-down card up a
+/// little at a time from a side or the top and reads the rank from the pips
+/// underneath. The face carries no corner index.
+///
+/// Releasing below [threshold] lays the card back down; releasing above it,
+/// or peeling the whole card, reports completion through [onRelease].
 class RiverSqueezeCard extends StatefulWidget {
   const RiverSqueezeCard({
     super.key,
     required this.card,
-    required this.colorMode,
     required this.progress,
     required this.onProgress,
     required this.onRelease,
+    this.threshold = 0.6,
   });
 
   final PlayingCard card;
-  final CardColorMode colorMode;
+
+  /// Progress to restore when the card is rebuilt mid-squeeze.
   final double progress;
   final ValueChanged<double> onProgress;
   final ValueChanged<double> onRelease;
+  final double threshold;
 
   @override
   State<RiverSqueezeCard> createState() => _RiverSqueezeCardState();
@@ -26,381 +40,393 @@ class RiverSqueezeCard extends StatefulWidget {
 
 class _RiverSqueezeCardState extends State<RiverSqueezeCard>
     with SingleTickerProviderStateMixin {
-  static const Duration _squeezeDuration = Duration(milliseconds: 1800);
-  static const Duration _releaseDuration = Duration(milliseconds: 320);
+  static const _settleDuration = Duration(milliseconds: 260);
+  static const _completeAt = 0.99;
+  static const _a11yStep = 0.2;
 
-  late final AnimationController _controller;
-  bool _isLandscape = false;
+  late final AnimationController _settle;
+  final FocusNode _focusNode = FocusNode(debugLabel: 'riverSqueeze');
+
+  Size _cardSize = Size.zero;
+  SqueezeEdge _edge = SqueezeEdge.right;
+  Offset _delta = Offset.zero;
+  Offset _dragStart = Offset.zero;
+  Offset _settleFrom = Offset.zero;
+  double? _restoreFraction;
+  double _fraction = 0;
   bool _completed = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: _squeezeDuration,
-      reverseDuration: _releaseDuration,
-      lowerBound: 0,
-      upperBound: 1,
-      value: widget.progress,
-    );
-    _controller.addListener(_handleTick);
-    _controller.addStatusListener(_handleStatus);
-  }
-
-  void _handleTick() {
-    widget.onProgress(_controller.value);
-  }
-
-  void _handleStatus(AnimationStatus status) {
-    if (status == AnimationStatus.completed && !_completed) {
-      _completed = true;
-      widget.onRelease(1);
-    }
+    _restoreFraction = widget.progress > 0 ? widget.progress : null;
+    _settle = AnimationController(vsync: this, duration: _settleDuration)
+      ..addListener(_handleSettleTick);
   }
 
   @override
   void dispose() {
-    _controller.removeListener(_handleTick);
-    _controller.removeStatusListener(_handleStatus);
-    _controller.dispose();
+    _settle.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
-  void _startSqueeze() {
+  SqueezeFold get _fold => SqueezeFold(_cardSize, _edge, _delta);
+
+  void _handlePanStart(DragStartDetails details) {
     if (_completed) return;
-    _controller.duration = _squeezeDuration;
-    _controller.forward();
+    _settle.stop();
+    _edge = nearestEdge(_cardSize, details.localPosition);
+    _dragStart = details.localPosition;
+    _setDelta(Offset.zero);
   }
 
-  void _endSqueeze() {
+  void _handlePanUpdate(DragUpdateDetails details) {
     if (_completed) return;
-    _controller.reverseDuration = _releaseDuration;
-    _controller.reverse();
+    _setDelta(details.localPosition - _dragStart);
   }
 
-  void _toggleOrientation() {
+  void _handlePanEnd() {
+    if (_completed || !mounted) return;
+    if (_fraction >= widget.threshold) {
+      _complete();
+      return;
+    }
+    _settleFrom = _delta;
+    _settle.value = 1;
+    _settle.reverse();
+  }
+
+  void _handleSettleTick() {
     if (_completed) return;
-    setState(() => _isLandscape = !_isLandscape);
+    _setDelta(_settleFrom * _settle.value);
+  }
+
+  /// Bends the card from the side by [fraction].
+  void _setFraction(double fraction) {
+    if (_completed || _cardSize.isEmpty) return;
+    _settle.stop();
+    _edge = SqueezeEdge.right;
+    final fold = SqueezeFold.forFraction(_cardSize, _edge, fraction);
+    _setDelta(fold.normal * fold.distance);
+    if (fraction >= widget.threshold && fraction < _completeAt) {
+      // Without a finger to lift, a keyboard or screen-reader step past the
+      // threshold is the release.
+      _complete();
+    }
+  }
+
+  void _setDelta(Offset delta) {
+    final previous = _fraction;
+    setState(() => _delta = delta);
+    _fraction = _fold.revealedFraction;
+    _haptics(previous, _fraction);
+    widget.onProgress(_fraction);
+    if (_fraction >= _completeAt) {
+      _complete();
+    }
+  }
+
+  void _haptics(double previous, double next) {
+    if (next <= previous) return;
+    if (previous < widget.threshold && next >= widget.threshold) {
+      HapticFeedback.mediumImpact();
+    } else if ((next * 5).floor() > (previous * 5).floor()) {
+      HapticFeedback.selectionClick();
+    }
+  }
+
+  void _complete() {
+    if (_completed) return;
+    _completed = true;
+    _settle.stop();
+    widget.onRelease(1);
+  }
+
+  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.arrowUp ||
+        key == LogicalKeyboardKey.arrowRight) {
+      _setFraction(math.min(1, _fraction + _a11yStep));
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.arrowDown ||
+        key == LogicalKeyboardKey.arrowLeft) {
+      _setFraction(math.max(0, _fraction - _a11yStep));
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.space) {
+      _complete();
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  static String _percent(double fraction) => '${(fraction * 100).round()}%';
+
+  static const _hintGap = FlipoutSpace.s2;
+  static const _hintHeight = 24.0;
+
+  static Size _fitCard(BoxConstraints constraints) {
+    const aspect = 5 / 7;
+    // Leave room for the hint plus the card's hard edge and drop shadow.
+    var height = math.min(
+      constraints.maxHeight - _hintGap - _hintHeight - 16,
+      380.0,
+    );
+    var width = height * aspect;
+    final maxWidth = constraints.maxWidth * 0.78;
+    if (width > maxWidth) {
+      width = maxWidth;
+      height = width / aspect;
+    }
+    return Size(math.max(width, 0), math.max(height, 0));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 280),
-          transitionBuilder: (child, animation) =>
-              FadeTransition(opacity: animation, child: child),
-          child: AnimatedRotation(
-            key: ValueKey(_isLandscape),
-            turns: _isLandscape ? 0.25 : 0,
-            duration: const Duration(milliseconds: 320),
-            curve: Curves.easeInOutCubic,
-            child: SizedBox(
-              width: 180,
-              height: 252,
-              child: AnimatedBuilder(
-                animation: _controller,
-                builder: (context, _) => _SqueezeStage(
-                  card: widget.card,
-                  colorMode: widget.colorMode,
-                  progress: _controller.value,
-                  isLandscape: _isLandscape,
+    return LayoutBuilder(
+      builder: (context, constraints) => Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildCard(constraints),
+            const SizedBox(height: _hintGap),
+            SizedBox(
+              height: _hintHeight,
+              child: Center(
+                child: ExcludeSemantics(
+                  child: Text(
+                    _fraction > 0
+                        ? _percent(_fraction)
+                        : 'Drag an edge to squeeze',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: FlipoutColors.textMuted,
+                      fontWeight: FlipoutType.cta,
+                      fontSize: FlipoutType.sm,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard(BoxConstraints constraints) {
+    _cardSize = _fitCard(constraints);
+    final restore = _restoreFraction;
+    if (restore != null && !_cardSize.isEmpty) {
+      _restoreFraction = null;
+      final fold = SqueezeFold.forFraction(_cardSize, _edge, restore);
+      _delta = fold.normal * fold.distance;
+      _fraction = fold.revealedFraction;
+    }
+
+    return Center(
+      child: Focus(
+        focusNode: _focusNode,
+        onKeyEvent: _handleKey,
+        // A button, not a slider: Flutter web renders slider semantics as an
+        // <input type=range> without an accessible name.
+        child: Semantics(
+          container: true,
+          button: true,
+          label: 'Reveal river card',
+          onTap: _complete,
+          child: GestureDetector(
+            key: const Key('squeezeCard'),
+            dragStartBehavior: DragStartBehavior.down,
+            onPanStart: _handlePanStart,
+            onPanUpdate: _handlePanUpdate,
+            onPanEnd: (_) => _handlePanEnd(),
+            onPanCancel: _handlePanEnd,
+            child: SizedBox.fromSize(
+              size: _cardSize,
+              child: _PeeledCard(
+                card: widget.card,
+                size: _cardSize,
+                fold: _fold,
               ),
             ),
           ),
         ),
-        const SizedBox(height: FlipoutSpace.s5),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _ControlButton(
-              key: const Key('rotateButton'),
-              icon: Icons.screen_rotation,
-              label: _isLandscape ? 'TOP' : 'SIDE',
-              onTap: _toggleOrientation,
-            ),
-            const SizedBox(width: FlipoutSpace.s4),
-            _SqueezeButton(
-              onPressStart: _startSqueeze,
-              onPressEnd: _endSqueeze,
-              progress: _controller.value,
-            ),
-          ],
-        ),
-        const SizedBox(height: FlipoutSpace.s2),
-        AnimatedBuilder(
-          animation: _controller,
-          builder: (context, _) => Text(
-            '${(_controller.value * 100).round()}%',
-            style: const TextStyle(
-              color: FlipoutColors.textMuted,
-              fontWeight: FlipoutType.cta,
-              fontSize: FlipoutType.sm,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
-class _SqueezeStage extends StatelessWidget {
-  const _SqueezeStage({
+class _PeeledCard extends StatelessWidget {
+  const _PeeledCard({
     required this.card,
-    required this.colorMode,
-    required this.progress,
-    required this.isLandscape,
+    required this.size,
+    required this.fold,
   });
 
   final PlayingCard card;
-  final CardColorMode colorMode;
-  final double progress;
-  final bool isLandscape;
+  final Size size;
+  final SqueezeFold fold;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(FlipoutRadius.sm + 2),
-      child: SizedBox.expand(
+    final radius = BorderRadius.circular(size.width * 0.06);
+    return DecoratedBox(
+      // Thick card stock: a hard edge just below the card plus a soft drop.
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        boxShadow: const [
+          BoxShadow(color: Color(0xff0b6b62), offset: Offset(0, 3)),
+          BoxShadow(
+            color: Color(0x330f172a),
+            offset: Offset(0, 14),
+            blurRadius: 28,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: radius,
         child: Stack(
           fit: StackFit.expand,
           children: [
-            PlayingCardView(
-              card: card,
-              colorMode: colorMode,
-              faceDown: false,
-              size: const Size(180, 252),
-              stripped: true,
-            ),
-            ClipPath(
-              clipper: _PeelClipper(progress, isLandscape: isLandscape),
+            // The face sits under the back until the squeeze reveals it, so
+            // it must not leak the card to screen readers. Squeeze is always
+            // two-colour so the suit stays hidden until its shape shows.
+            ExcludeSemantics(
               child: PlayingCardView(
                 card: card,
-                colorMode: colorMode,
-                faceDown: true,
-                size: const Size(180, 252),
+                colorMode: CardColorMode.twoColor,
+                face: CardFace.pips,
+                size: size,
               ),
             ),
             ClipPath(
-              clipper: _PeelEdgeClipper(progress, isLandscape: isLandscape),
-              child: const DecoratedBox(
-                decoration: BoxDecoration(color: Color(0x33000000)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Defines the area that should remain face-down (covered by the back).
-///
-/// In portrait we reveal upward from the bottom edge. In landscape the card
-/// itself has been rotated 90° clockwise, so the screen's bottom edge maps
-/// to the card's right edge — we reveal leftward from that side.
-class _PeelClipper extends CustomClipper<Path> {
-  const _PeelClipper(this.progress, {required this.isLandscape});
-
-  final double progress;
-  final bool isLandscape;
-
-  @override
-  Path getClip(Size size) {
-    final reveal = progress.clamp(0.0, 1.0);
-    final path = Path();
-    if (isLandscape) {
-      final cutWidth = size.width * reveal;
-      path
-        ..moveTo(0, 0)
-        ..lineTo(size.width - cutWidth, 0)
-        ..lineTo(size.width - cutWidth, size.height)
-        ..lineTo(0, size.height)
-        ..close();
-    } else {
-      final cutHeight = size.height * reveal;
-      path
-        ..moveTo(0, 0)
-        ..lineTo(size.width, 0)
-        ..lineTo(size.width, size.height - cutHeight)
-        ..lineTo(0, size.height - cutHeight)
-        ..close();
-    }
-    return path;
-  }
-
-  @override
-  bool shouldReclip(covariant _PeelClipper oldClipper) =>
-      oldClipper.progress != progress || oldClipper.isLandscape != isLandscape;
-}
-
-/// Thin shadow band along the peel edge to give a "lifted paper" hint.
-class _PeelEdgeClipper extends CustomClipper<Path> {
-  const _PeelEdgeClipper(this.progress, {required this.isLandscape});
-
-  final double progress;
-  final bool isLandscape;
-
-  @override
-  Path getClip(Size size) {
-    final reveal = progress.clamp(0.0, 1.0);
-    if (reveal <= 0.001) return Path();
-    final path = Path();
-    if (isLandscape) {
-      final x = size.width - size.width * reveal;
-      path
-        ..moveTo(x - 1, 0)
-        ..lineTo(x + 4, 0)
-        ..lineTo(x + 4, size.height)
-        ..lineTo(x - 1, size.height)
-        ..close();
-    } else {
-      final y = size.height - size.height * reveal;
-      path
-        ..moveTo(0, y - 1)
-        ..lineTo(size.width, y - 1)
-        ..lineTo(size.width, y + 4)
-        ..lineTo(0, y + 4)
-        ..close();
-    }
-    return path;
-  }
-
-  @override
-  bool shouldReclip(covariant _PeelEdgeClipper oldClipper) =>
-      oldClipper.progress != progress || oldClipper.isLandscape != isLandscape;
-}
-
-class _ControlButton extends StatelessWidget {
-  const _ControlButton({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: FlipoutColors.surface1,
-      borderRadius: BorderRadius.circular(FlipoutRadius.md),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(FlipoutRadius.md),
-        onTap: onTap,
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(FlipoutRadius.md),
-            border: Border.all(color: FlipoutColors.border),
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: FlipoutSpace.s3,
-            vertical: FlipoutSpace.s2,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 22, color: FlipoutColors.accentInk),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: FlipoutColors.accentInk,
-                  fontSize: FlipoutType.xs,
-                  fontWeight: FlipoutType.cta,
-                  letterSpacing: 0.8,
+              clipper: _PolygonClipper(fold.coveredPolygon),
+              child: ExcludeSemantics(
+                child: PlayingCardView(
+                  card: null,
+                  colorMode: CardColorMode.twoColor,
+                  faceDown: true,
+                  size: size,
                 ),
               ),
-            ],
-          ),
+            ),
+            CustomPaint(painter: _CurlPainter(fold)),
+          ],
         ),
       ),
     );
   }
 }
 
-class _SqueezeButton extends StatefulWidget {
-  const _SqueezeButton({
-    required this.onPressStart,
-    required this.onPressEnd,
-    required this.progress,
-  });
+class _PolygonClipper extends CustomClipper<Path> {
+  const _PolygonClipper(this.polygon);
 
-  final VoidCallback onPressStart;
-  final VoidCallback onPressEnd;
-  final double progress;
+  final List<Offset> polygon;
 
   @override
-  State<_SqueezeButton> createState() => _SqueezeButtonState();
+  Path getClip(Size size) => Path()..addPolygon(polygon, true);
+
+  @override
+  bool shouldReclip(covariant _PolygonClipper oldClipper) =>
+      !_samePolygon(oldClipper.polygon, polygon);
 }
 
-class _SqueezeButtonState extends State<_SqueezeButton> {
-  bool _pressed = false;
+/// Paints the lifted edge: the shadow it casts on the revealed face and
+/// the rolled-up band of card stock lying over the back.
+class _CurlPainter extends CustomPainter {
+  const _CurlPainter(this.fold);
 
-  void _handleDown() {
-    setState(() => _pressed = true);
-    widget.onPressStart();
+  final SqueezeFold fold;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (fold.distance <= 0) return;
+    final origin = fold.origin;
+    final n = fold.normal;
+    final d = fold.distance;
+    final curl = fold.curlWidth;
+    final shade = math.min(d, size.shortestSide * 0.12);
+
+    Offset at(double depth) => origin + n * depth;
+
+    // Shadow under the lifted card, falling on the face near the fold.
+    canvas.save();
+    canvas.clipPath(Path()..addPolygon(fold.revealedPolygon, true));
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()
+        ..shader = _gradientBetween(at(d - shade), at(d), const [
+          Color(0x00000000),
+          Color(0x40000000),
+        ]),
+    );
+    canvas.restore();
+
+    // Contact shadow the curl casts on the back beyond it.
+    final beyond = Path()..addPolygon(fold.coveredPolygon, true);
+    canvas.save();
+    canvas.clipPath(beyond);
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()
+        ..shader = _gradientBetween(at(d + curl), at(d + curl + 10), const [
+          Color(0x40000000),
+          Color(0x00000000),
+        ]),
+    );
+    canvas.restore();
+
+    // The rolled card stock itself: light along the crease, shaded where it
+    // turns away, with a crisp outer edge.
+    final band = fold.curlPolygon;
+    if (band.isEmpty) return;
+    final bandPath = Path()..addPolygon(band, true);
+    canvas.drawPath(
+      bandPath,
+      Paint()
+        ..shader = _gradientBetween(at(d), at(d + curl), const [
+          Color(0xffd6dde5),
+          Color(0xfffdfefe),
+          Color(0xffe8edf2),
+        ]),
+    );
+    canvas.drawPath(
+      bandPath,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = const Color(0x260f172a),
+    );
   }
 
-  void _handleUp() {
-    if (!_pressed) return;
-    setState(() => _pressed = false);
-    widget.onPressEnd();
+  /// A gradient whose stops run from [from] to [to], clamped beyond them.
+  static Shader _gradientBetween(Offset from, Offset to, List<Color> colors) {
+    final stops = [
+      for (var i = 0; i < colors.length; i += 1) i / (colors.length - 1),
+    ];
+    return ui.Gradient.linear(from, to, colors, stops);
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Listener(
-      onPointerDown: (_) => _handleDown(),
-      onPointerUp: (_) => _handleUp(),
-      onPointerCancel: (_) => _handleUp(),
-      child: AnimatedContainer(
-        key: const Key('squeezeButton'),
-        duration: const Duration(milliseconds: 120),
-        height: 56,
-        width: 168,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: _pressed
-                ? const [FlipoutColors.accentHover, FlipoutColors.accentInk]
-                : const [FlipoutColors.accent, FlipoutColors.accentHover],
-          ),
-          borderRadius: BorderRadius.circular(FlipoutRadius.md),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x40134e4a),
-              offset: Offset(0, 4),
-              blurRadius: 0,
-            ),
-          ],
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.compress, color: Colors.white, size: 22),
-            SizedBox(width: FlipoutSpace.s2),
-            Text(
-              'SQUEEZE',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FlipoutType.cta,
-                fontSize: FlipoutType.md,
-                letterSpacing: 2.0,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  bool shouldRepaint(covariant _CurlPainter oldDelegate) =>
+      oldDelegate.fold.distance != fold.distance ||
+      oldDelegate.fold.normal != fold.normal ||
+      oldDelegate.fold.edge != fold.edge ||
+      oldDelegate.fold.size != fold.size;
+}
+
+bool _samePolygon(List<Offset> a, List<Offset> b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i += 1) {
+    if (a[i] != b[i]) return false;
   }
+  return true;
 }

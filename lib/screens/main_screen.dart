@@ -278,18 +278,22 @@ class _Board extends StatelessWidget {
               ],
             ),
             const SizedBox(height: FlipoutSpace.s2),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (var index = 0; index < 5; index += 1) ...[
-                  if (index > 0) const SizedBox(width: FlipoutSpace.s2),
-                  _BoardSlot(
-                    game: game,
-                    index: index,
-                    highlightCards: winningBoardCards,
-                  ),
+            // Five full-size cards need ~312px; narrow phones scale them down.
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var index = 0; index < 5; index += 1) ...[
+                    if (index > 0) const SizedBox(width: FlipoutSpace.s2),
+                    _BoardSlot(
+                      game: game,
+                      index: index,
+                      highlightCards: winningBoardCards,
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ],
         ),
@@ -403,6 +407,7 @@ class _PlayerCountControls extends StatelessWidget {
           ),
           _StepperButton(
             keyValue: const Key('decrementPlayers'),
+            label: 'Remove player',
             icon: Icons.remove,
             onPressed: game.players.length > 2 ? game.decrementPlayers : null,
           ),
@@ -421,6 +426,7 @@ class _PlayerCountControls extends StatelessWidget {
           ),
           _StepperButton(
             keyValue: const Key('incrementPlayers'),
+            label: 'Add player',
             icon: Icons.add,
             onPressed: game.players.length < 8 ? game.incrementPlayers : null,
           ),
@@ -433,11 +439,13 @@ class _PlayerCountControls extends StatelessWidget {
 class _StepperButton extends StatelessWidget {
   const _StepperButton({
     required this.keyValue,
+    required this.label,
     required this.icon,
     required this.onPressed,
   });
 
   final Key keyValue;
+  final String label;
   final IconData icon;
   final VoidCallback? onPressed;
 
@@ -448,21 +456,30 @@ class _StepperButton extends StatelessWidget {
       key: keyValue,
       width: 32,
       height: 32,
-      child: Material(
-        color: disabled ? FlipoutColors.surface2 : FlipoutColors.surface2,
+      child: Semantics(
+        label: label,
+        button: true,
+        enabled: !disabled,
+        child: _buttonBody(disabled),
+      ),
+    );
+  }
+
+  Widget _buttonBody(bool disabled) {
+    return Material(
+      color: disabled ? FlipoutColors.surface2 : FlipoutColors.surface2,
+      borderRadius: BorderRadius.circular(FlipoutRadius.md - 2),
+      child: InkWell(
         borderRadius: BorderRadius.circular(FlipoutRadius.md - 2),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(FlipoutRadius.md - 2),
-          onTap: onPressed,
-          child: Ink(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(FlipoutRadius.md - 2),
-              border: Border.all(color: FlipoutColors.borderStrong),
-            ),
-            child: Opacity(
-              opacity: disabled ? 0.35 : 1,
-              child: Icon(icon, size: 18, color: FlipoutColors.text),
-            ),
+        onTap: onPressed,
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(FlipoutRadius.md - 2),
+            border: Border.all(color: FlipoutColors.borderStrong),
+          ),
+          child: Opacity(
+            opacity: disabled ? 0.35 : 1,
+            child: Icon(icon, size: 18, color: FlipoutColors.text),
           ),
         ),
       ),
@@ -479,18 +496,14 @@ class _SqueezeStage extends StatelessWidget {
   Widget build(BuildContext context) {
     final riverCard = game.hiddenRiverCard;
     if (riverCard == null) return const SizedBox.shrink();
-    return Center(
-      child: SingleChildScrollView(
-        child: RiverSqueezeCard(
-          key: const Key('riverSqueeze'),
-          card: riverCard,
-          colorMode: game.cardColorMode,
-          progress: game.squeezeProgress,
-          onProgress: game.updateSqueezeProgress,
-          onRelease: (progress) =>
-              unawaited(game.completeRiverSqueeze(progress)),
-        ),
-      ),
+    // No scroll view here: a scrollable would compete with the peel drag.
+    return RiverSqueezeCard(
+      key: const Key('riverSqueeze'),
+      card: riverCard,
+      progress: game.squeezeProgress,
+      threshold: GameController.squeezeCompletionThreshold,
+      onProgress: game.updateSqueezeProgress,
+      onRelease: (progress) => unawaited(game.completeRiverSqueeze(progress)),
     );
   }
 }
@@ -797,18 +810,22 @@ class _PrimaryAction extends StatelessWidget {
         ),
         child: Material(
           color: Colors.transparent,
-          child: InkWell(
-            key: const Key('dealButton'),
-            borderRadius: BorderRadius.circular(FlipoutRadius.md),
-            onTap: enabled ? () => unawaited(game.deal()) : null,
-            child: Center(
-              child: Text(
-                _dealLabel(game.phase),
-                style: TextStyle(
-                  fontWeight: FlipoutType.cta,
-                  fontSize: FlipoutType.lg,
-                  letterSpacing: 2.2,
-                  color: enabled ? Colors.white : FlipoutColors.textDim,
+          child: Semantics(
+            button: true,
+            enabled: enabled,
+            child: InkWell(
+              key: const Key('dealButton'),
+              borderRadius: BorderRadius.circular(FlipoutRadius.md),
+              onTap: enabled ? () => unawaited(game.deal()) : null,
+              child: Center(
+                child: Text(
+                  _dealLabel(game.phase),
+                  style: TextStyle(
+                    fontWeight: FlipoutType.cta,
+                    fontSize: FlipoutType.lg,
+                    letterSpacing: 2.2,
+                    color: enabled ? Colors.white : FlipoutColors.textDim,
+                  ),
                 ),
               ),
             ),

@@ -26,7 +26,8 @@ class FlipoutColors {
 
   static const text = Color(0xff0f172a);
   static const textMuted = Color(0xff475569);
-  static const textDim = Color(0xff94a3b8);
+  // Slate 500: the lightest slate that keeps 4.5:1 (WCAG AA) on white.
+  static const textDim = Color(0xff64748b);
 
   static const cardBg = Color(0xffffffff);
   static const cardBorder = Color(0xffe2e8f0);
